@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG 助手</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --sidebar: #17191f;
+      --sidebar-hover: #20232b;
+      --surface: #21242c;
+      --surface-soft: #2a2f3a;
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --text: #eceff4;
+      --muted: #9ea6b5;
+      --accent: #19c37d;
+      --accent-soft: rgba(25, 195, 125, 0.14);
+      --user: #2f6feb;
+      --danger: #ff5d73;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--surface-border);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px 16px 14px;
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c5cff, #19c37d);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: white;
+    }
+
+    .brand-name {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    .icon-btn {
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    .icon-btn:hover {
+      background: var(--sidebar-hover);
+      color: var(--text);
+    }
+
+    .sidebar-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .panel-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    .upload-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .upload-drop {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+      color: var(--muted);
+      line-height: 1.65;
+      cursor: pointer;
+    }
+
+    .upload-drop.has-file {
+      justify-content: flex-start;
+      text-align: left;
+      color: var(--text);
+      border-style: solid;
+      background: var(--surface);
+    }
+
+    .upload-drop strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #08140f;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.94;
+    }
+
+    .btn-secondary {
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #343a47;
+    }
+
+    .btn-danger {
+      background: rgba(255, 93, 115, 0.12);
+      color: #ff8ea0;
+      border: 1px solid rgba(255, 93, 115, 0.18);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-row .btn {
+      flex: 1;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    .doc-item,
+    .history-item {
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease;
+      position: relative;
+    }
+
+    .doc-item:hover,
+    .history-item:hover {
+      background: var(--sidebar-hover);
+    }
+
+    .doc-item.active {
+      background: var(--accent-soft);
+      border-color: rgba(25, 195, 125, 0.28);
+    }
+
+    .doc-delete {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 93, 115, 0.16);
+      background: rgba(255, 93, 115, 0.08);
+      color: #ff8ea0;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .doc-item.active .doc-delete {
+      display: inline-flex;
+    }
+
+    .doc-delete:hover {
+      background: rgba(255, 93, 115, 0.16);
+    }
+
+    .item-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+      word-break: break-word;
+      margin-bottom: 4px;
+    }
+
+    .item-meta {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+      background:
+        radial-gradient(circle at top center, rgba(255, 255, 255, 0.04), transparent 24%),
+        var(--bg);
+    }
+
+    .topbar {
+      height: 62px;
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 24px;
+      background: rgba(15, 17, 21, 0.88);
+      backdrop-filter: blur(16px);
+    }
+
+    .topbar-title {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .topbar-title strong {
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-title span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chat-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 28px 24px 18px;
+    }
+
+    .chat-inner {
+      max-width: 880px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .empty-state {
+      min-height: calc(100vh - 220px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.8;
+      padding: 0 20px;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .message.user {
+      align-items: flex-end;
+    }
+
+    .message.assistant {
+      align-items: flex-start;
+    }
+
+    .message-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: white;
+      background: var(--surface-soft);
+      flex: 0 0 auto;
+    }
+
+    .message.user .avatar {
+      background: var(--user);
+    }
+
+    .message.assistant .avatar {
+      background: linear-gradient(135deg, #7c5cff, #19c37d);
+    }
+
+    .bubble {
+      max-width: min(100%, 760px);
+      padding: 16px 18px;
+      border-radius: 18px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: var(--shadow);
+    }
+
+    .message.user .bubble {
+      background: var(--user);
+      color: white;
+    }
+
+    .message.assistant .bubble {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+    }
+
+    .citations {
+      width: min(100%, 760px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .citation-toggle {
+      align-self: flex-start;
+      border: 1px solid var(--surface-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .citation-toggle:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .citation-list {
+      display: none;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .citation-list.open {
+      display: grid;
+    }
+
+    .citation {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .citation-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .citation-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .composer-wrap {
+      border-top: 1px solid var(--surface-border);
+      background: rgba(15, 17, 21, 0.92);
+      padding: 16px 24px 18px;
+      backdrop-filter: blur(16px);
+    }
+
+    .composer-inner {
+      max-width: 880px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .composer-box {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 22px;
+      padding: 12px 12px 12px 16px;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .composer-box textarea {
+      border: 0;
+      outline: none;
+      resize: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      min-height: 26px;
+      max-height: 220px;
+      width: 100%;
+      line-height: 1.7;
+      overflow: auto;
+    }
+
+    .composer-box textarea::placeholder {
+      color: #7c8498;
+    }
+
+    .send-btn {
+      border: 0;
+      border-radius: 14px;
+      background: var(--accent);
+      color: #08140f;
+      cursor: pointer;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .composer-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      min-height: 18px;
+    }
+
+    .status-text {
+      color: var(--muted);
+    }
+
+    .filter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--surface-border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .filter-pill.hidden {
+      display: none;
+    }
+
+    .filter-pill button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      line-height: 1;
+    }
+
+    @media (max-width: 960px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .topbar,
+      .chat-scroll,
+      .composer-wrap {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-mark">R</div>
+          <div class="brand-name">RAG 助手</div>
+        </div>
+        <button class="icon-btn" id="refreshBtn" type="button" title="刷新">↻</button>
+      </div>
+
+      <div class="sidebar-scroll">
+        <section class="panel">
+          <div class="panel-title">上传文档</div>
+          <div class="upload-card">
+            <label class="upload-drop" id="uploadDrop" for="fileInput">
+              <div>
+                <strong>上传 PDF / Markdown</strong>
+                选择文件后点击“处理文档”
+              </div>
+            </label>
+            <input class="hidden-input" id="fileInput" type="file" accept=".pdf,.md,.markdown">
+            <div class="btn-row">
+              <button class="btn btn-primary" id="uploadBtn" type="button">处理文档</button>
+              <button class="btn btn-secondary" id="clearChatBtn" type="button">清空聊天</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">文档</div>
+          <div class="list" id="docList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">历史记录</div>
+          <div class="list" id="historyList"></div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-title">
+          <strong id="pageTitle">新建对话</strong>
+          <span id="healthText">服务检查中...</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary" id="summaryBtn" type="button">总结文档</button>
+        </div>
+      </header>
+
+      <section class="chat-scroll">
+        <div class="chat-inner" id="chatInner">
+          <div class="empty-state" id="emptyState">
+            上传文档后开始提问。<br>
+            如果左侧选中了文档，本轮提问会优先在当前文档内回答。
+          </div>
+        </div>
+      </section>
+
+      <footer class="composer-wrap">
+        <div class="composer-inner">
+          <div class="filter-pill hidden" id="docFilterPill">
+            <span id="docFilterText"></span>
+            <button id="clearDocFilterBtn" type="button" title="取消当前文档过滤">×</button>
+          </div>
+
+          <div class="composer-box">
+            <textarea id="questionInput" rows="1" placeholder="输入问题"></textarea>
+            <button class="send-btn" id="askBtn" type="button">↑</button>
+          </div>
+
+          <div class="composer-foot">
+            <div class="status-text" id="statusText"></div>
+            <div>回答仅基于已上传文档</div>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

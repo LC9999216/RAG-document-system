@@ -1,0 +1,12 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+tests
+uvicorn_stdout.log
+uvicorn_stderr.log
+vector_store

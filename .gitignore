@@ -1,0 +1,96 @@
+# Environment
+.env
+venv/
+.venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vector store (keep structure, ignore contents)
+vector_store/*.bin
+vector_store/*.db
+vector_store/*.faiss
+vector_store/*.pkl
+vector_store/*.json
+!vector_store/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+# Local secrets
+.env
+.env.local
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache/test artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+tests/.tmp/
+
+# Local runtime/cache directories
+.tmp/
+.tmp-run/
+.hf-cache/
+.uv-cache/
+
+# RAG runtime data
+vector_store/*.db
+vector_store/*.db-*
+vector_store/*.faiss
+vector_store/*.pkl
+vector_store/documents.json
+vector_store/chat_history.json
+vector_store/legacy_backup/
+!vector_store/.gitkeep
+
+# Logs
+*.log
+uvicorn_stdout.log
+uvicorn_stderr.log
+
+# Local uploaded/test documents
+test.pdf
+test.md
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+.claude/
